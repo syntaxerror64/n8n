@@ -1,1 +1,152 @@
-.
+{
+  "name": "Проверка коротышей",
+  "nodes": [
+    {
+      "parameters": {
+        "values": {
+          "number": [
+            {
+              "name": "batchSize",
+              "value": 10
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "new-set-node-id",
+      "name": "Set Batch Size",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [-420, -40]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1fuSIkv_ZUOSaK1eEWQup5A5ged0Is3-fNhAtYA_-PFo",
+          "mode": "list",
+          "cachedResultName": "Скорозвон выгрузка",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fuSIkv_ZUOSaK1eEWQup5A5ged0Is3-fNhAtYA_-PFo/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Выгрузка",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1fuSIkv_ZUOSaK1eEWQup5A5ged0Is3-fNhAtYA_-PFo/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Транскрибация"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [-240, -40],
+      "id": "ed6f1036-7519-4e7a-8aa5-ad8e9eefa023",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "rBATEp0Ztdrh68Ux",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ $('Set Batch Size').item.json.batchSize }}",
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "f2ac1239-a80f-458f-aacd-a6502a03f282",
+      "name": "запускаем цикл по каждому блогеру2",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [-60, -40],
+      "typeVersion": 3
+    },
+    {
+      "parameters": {
+        "batchSize": "={{ $('Set Batch Size').item.json.batchSize }}",
+        "options": {
+          "reset": false
+        }
+      },
+      "id": "bcd246array-a406-473b-9ff8-1f2e6bf385c8",
+      "name": "запускаем цикл по каждому блогеру",
+      "type": "n8n-nodes-base.splitInBatches",
+      "position": [0, 300],
+      "typeVersion": 3,
+      "onError": "continueRegularOutput"
+    }
+    // Other nodes remain unchanged unless specified
+  ],
+  "connections": {
+    "Set Batch Size": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "запускаем цикл по каждому блогеру2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "запускаем цикл по каждому блогеру2": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge5",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    // Other connections remain unchanged
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Set Batch Size",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "75a6eb20-5f91-4bf8-ac96-0bfc41a35e14",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0bfd2efddafd8dcfbbce94e274301196e5be8a0f7e157a1278036ccbed862f1f"
+  },
+  "id": "2R5FUUO9Se33fJ6p",
+  "tags": []
+}

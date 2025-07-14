@@ -1,0 +1,198 @@
+{
+  "name": "archivist_bot",
+  "active": true,
+  "settings": {
+    "executionTimeout": 300,
+    "saveExecutionProgress": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Telegram Polling Trigger",
+      "type": "n8n-nodes-telegram-polling.telegramPollingTrigger",
+      "typeVersion": 1,
+      "position": [-400, -100],
+      "parameters": {
+        "updates": ["message"],
+        "options": {
+          "timeout": 60
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "LK1MvfZO3GuJeg6I",
+          "name": "Архивариус"
+        }
+      }
+    },
+    {
+      "id": "2",
+      "name": "Validate URL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-200, -100],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "options": { "caseSensitive": false },
+          "rules": [
+            {
+              "value1": "={{ $json[\"message\"][\"text\"] }}",
+              "operation": "regex",
+              "value2": "^https?://[\\w\\-]+(\\.[\\w\\-]+)+(/[\\w\\-\\.,@?^=%&:/~\\+#]*)?$"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [0, -100],
+      "parameters": {
+        "requestMethod": "GET",
+        "url": "={{ $json.message.text }}",
+        "timeout": 30000,
+        "options": {
+          "retryOnFail": true,
+          "maxTries": 3,
+          "waitBetweenTries": 1000
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Clean & Extract Markdown",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1,
+      "position": [200, -100],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json[\"data\"] }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Ты помощник, который получает текст HTML. Удали все теги и верни чистый markdown."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Parse Article",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, -100],
+      "parameters": {
+        "jsCode": "// Вход: items[0].json.cleanedMarkdown\nconst input = items[0].json.cleanedMarkdown;\nconst patterns = {\n  filename: /Название файла: \"([^\\\"]+)\"/i,\n  title: /Название: \"([^\\\"]+)\"/i,\n  content: /Текст статьи:\\s*\"([\\s\\S]*)\"$/i\n};\nconst result = {};\nconst errors = [];\nfor (const [key, re] of Object.entries(patterns)) {\n  const m = input.match(re);\n  if (m) result[key] = m[1].trim();\n  else errors.push(`Не найдено: ${key}`);\n}\nreturn [{ json: { ...result, errors: errors.length ? errors : null } }];"
+      }
+    },
+    {
+      "id": "6",
+      "name": "Validate Parsed Data",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [600, -100],
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "rules": [
+            {
+              "value1": "={{ $json[\"filename\"] }}",
+              "operation": "isNotEmpty"
+            },
+            {
+              "value1": "={{ $json[\"content\"] }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "7",
+      "name": "Save to Google Drive",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [800, -100],
+      "parameters": {
+        "operation": "createFromText",
+        "content": "={{ $json[\"content\"] }}",
+        "name": "={{ $json[\"filename\"] }}",
+        "driveId": "My Drive",
+        "folderId": "1jqZ_ppt0jGlKpTeQuGWW2acTImSITcb_"
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "UfGK9aqoj8rtqE7B",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "id": "8",
+      "name": "Success Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1000, -100],
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json[\"message\"][\"from\"][\"id\"] }}",
+        "text": "Статья успешно сохранена! ✔️",
+        "disableWebPagePreview": true,
+        "additionalFields": { "replyMarkup": "forceReply", "forceReply": {} }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "LK1MvfZO3GuJeg6I",
+          "name": "Архивариус"
+        }
+      }
+    },
+    {
+      "id": "9",
+      "name": "Error Workflow Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [-400, 100]
+    },
+    {
+      "id": "10",
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [-200, 100],
+      "parameters": {
+        "operation": "sendMessage",
+        "chatId": "={{ $json[\"message\"][\"from\"][\"id\"] || $env.DEFAULT_CHAT_ID }}",
+        "text": "Ошибка в workflow: {{$json[\"workflowError\"][\"message\"]}}"
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "LK1MvfZO3GuJeg6I",
+          "name": "Архивариус"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "1": { "main": [[{"node": "2","type":"main","index":0}]] },
+    "2": { "main": [[{"node": "3","type":"main","index":0}]] },
+    "3": { "main": [[{"node": "4","type":"main","index":0}]] },
+    "4": { "main": [[{"node": "5","type":"main","index":0}]] },
+    "5": { "main": [[{"node": "6","type":"main","index":0}]] },
+    "6": { 
+      "main": [
+        [{"node": "7","type":"main","index":0}],
+        [{"node": "4","type":"main","index":0}]
+      ]
+    },
+    "7": { "main": [[{"node": "8","type":"main","index":0}]] },
+    "9": { "main": [[{"node": "10","type":"main","index":0}]] }
+  }
+}

@@ -2,155 +2,158 @@
   "name": "speed_tests_models_api_openrouter",
   "nodes": [
     {
-      "id": "manualTrigger",
-      "name": "Когда запускается вручную",
+      "parameters": {
+        "options": {},
+        "documentId": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
+        "sheetName": "Sheet1"
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [-800, 0],
+      "id": "getRows",
+      "name": "Get all rows",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tfw9zSBchl2znVL4",
+          "name": "Google Sheets account"
+        }
+      },
+      "disabled": false
+    },
+    {
+      "parameters": {},
       "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [-800, 0]
+      "position": [-1080, 20],
+      "id": "manualTrigger",
+      "name": "Manual Trigger",
+      "disabled": false
     },
     {
-      "id": "getRows",
-      "name": "Get Rows in Sheet",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [-600, 0],
-      "credentials": {
-        "googleSheetsOAuth2Api": "Google Sheets account"
-      },
-      "parameters": {
-        "operation": "getAll",
-        "documentId": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
-        "sheetName": "Sheet1",
-        "returnAll": true
-      }
-    },
-    {
-      "id": "splitBatches",
-      "name": "Split In Batches",
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [-400, 0],
       "parameters": {
         "batchSize": 1
-      }
-    },
-    {
-      "id": "dateTimeStart",
-      "name": "Date & Time Start",
-      "type": "n8n-nodes-base.dateTime",
-      "typeVersion": 3,
-      "position": [-200, -100],
-      "parameters": {
-        "operation": "getCurrentDate",
-        "includeTime": true,
-        "outputField": "start_time"
-      }
-    },
-    {
-      "id": "httpRequest",
-      "name": "HTTP Request",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [0, -100],
-      "credentials": {
-        "httpHeaderAuth": "openrouterApi"
       },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-560, -20],
+      "id": "splitBatches",
+      "name": "Split In Batches",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "assignments": [
+          {
+            "key": "start_time",
+            "value": "={{ new Date().toISOString() }}"
+          }
+        ]
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [-320, 0],
+      "id": "setStartTime",
+      "name": "Set Start Time",
+      "disabled": false
+    },
+    {
       "parameters": {
         "method": "POST",
         "url": "https://openrouter.ai/api/v1/chat/completions",
-        "jsonParameters": true,
-        "jsonBody": {
-          "model": "={{$json[\"Название модели\"]}}",
-          "messages": [
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "role": "system",
-              "content": "Ты полезный помощник."
+              "name": "Authorization",
+              "value": "Bearer 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"
             },
             {
-              "role": "user",
-              "content": "Привет, как дела?"
+              "name": "Content-Type",
+              "value": "application/json"
             }
-          ],
-          "max_tokens": 3000,
-          "temperature": 0.7,
-          "stream": false
-        }
-      }
-    },
-    {
-      "id": "dateTimeEnd",
-      "name": "Date & Time End",
-      "type": "n8n-nodes-base.dateTime",
-      "typeVersion": 3,
-      "position": [200, -100],
-      "parameters": {
-        "operation": "getCurrentDate",
-        "includeTime": true,
-        "outputField": "end_time"
-      }
-    },
-    {
-      "id": "getDuration",
-      "name": "Get Duration",
-      "type": "n8n-nodes-base.dateTime",
-      "typeVersion": 3,
-      "position": [400, -100],
-      "parameters": {
-        "operation": "getTimeBetweenDates",
-        "startDate": "={{$json.start_time}}",
-        "endDate": "={{$json.end_time}}",
-        "units": ["seconds"],
-        "outputField": "duration"
-      }
-    },
-    {
-      "id": "setFields",
-      "name": "Set Fields",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.3,
-      "position": [600, 0],
-      "parameters": {
-        "mode": "manual",
-        "values": {
-          "Время отправки HTTP запроса": "={{$json.start_time}}",
-          "Время получения HTTP запроса": "={{$json.end_time}}",
-          "Сколько по времени обрабатывался": "={{$json.duration}} сек",
-          "Текст полученного сообщения": "={{$node[\"HTTP Request\"].json.choices[0].message.content}}"
-        }
-      }
-    },
-    {
-      "id": "updateRow",
-      "name": "Update Sheet Row",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.6,
-      "position": [800, 0],
-      "credentials": {
-        "googleSheetsOAuth2Api": "Google Sheets account"
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $json[\"Название модели\"] }}\",\n  \"messages\": [\n    {\"role\":\"system\",\"content\":\"Ты полезный помощник.\"},\n    {\"role\":\"user\",\"content\":\"Привет, как дела?\"}\n  ],\n  \"max_tokens\":3000,\n  \"temperature\":0.7,\n  \"stream\":false\n}"
       },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [-100, -20],
+      "id": "httpRequest",
+      "name": "HTTP Request",
+      "disabled": false
+    },
+    {
+      "parameters": {
+        "options": {},
+        "assignments": [
+          {
+            "key": "end_time",
+            "value": "={{ new Date().toISOString() }}"
+          },
+          {
+            "key": "duration_seconds",
+            "value": "={{ (new Date($json.end_time).getTime() - new Date($json.start_time).getTime())/1000 }}"
+          },
+          {
+            "key": "response_message",
+            "value": "={{ $node[\"HTTP Request\"].json.choices[0].message.content }}"
+          }
+        ]
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [200, 0],
+      "id": "calculateDuration",
+      "name": "Calculate Duration",
+      "disabled": false
+    },
+    {
       "parameters": {
         "operation": "update",
         "documentId": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
         "sheetName": "Sheet1",
         "columns": {
-          "Время отправки HTTP запроса": "={{$json[\"Время отправки HTTP запроса\"]}}",
-          "Время получения HTTP запроса": "={{$json[\"Время получения HTTP запроса\"]}}",
-          "Сколько по времени обрабатывался": "={{$json[\"Сколько по времени обрабатывался\"]}}",
-          "Текст полученного сообщения": "={{$json[\"Текст полученного сообщения\"]}}"
-        },
-        "matchingColumns": ["row_number"]
-      }
+          "mappingMode": "defineBelow",
+          "value": {
+            "Время отправки HTTP запроса": "={{ $json.start_time }}",
+            "Время получения HTTP запроса": "={{ $json.end_time }}",
+            "Сколько по времени обрабатывался": "={{ $json.duration_seconds }} сек",
+            "Текст полученного сообщения": "={{ $json.response_message }}"
+          },
+          "matchingColumns": [
+            {
+              "key": "row_number",
+              "value": "={{ $json.row_number }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [460, 0],
+      "id": "updateRow",
+      "name": "Update Sheet Row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tfw9zSBchl2znVL4",
+          "name": "Google Sheets account"
+        }
+      },
+      "disabled": false
     },
     {
-      "id": "waitBetween",
-      "name": "Wait Between Requests",
+      "parameters": {
+        "unit": "seconds"
+      },
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
-      "position": [1000, 0],
-      "parameters": {
-        "unit": "seconds",
-        "time": 1
-      }
+      "position": [720, 0],
+      "id": "waitNode",
+      "name": "Wait Between Requests",
+      "webhookId": "5bb60cd7-e264-4cb8-83b4-c9608a5c5512",
+      "disabled": false
     }
   ],
   "connections": {
@@ -180,14 +183,14 @@
       "main": [
         [
           {
-            "node": "dateTimeStart",
+            "node": "setStartTime",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "dateTimeStart": {
+    "setStartTime": {
       "main": [
         [
           {
@@ -202,36 +205,14 @@
       "main": [
         [
           {
-            "node": "dateTimeEnd",
+            "node": "calculateDuration",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "dateTimeEnd": {
-      "main": [
-        [
-          {
-            "node": "getDuration",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "getDuration": {
-      "main": [
-        [
-          {
-            "node": "setFields",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "setFields": {
+    "calculateDuration": {
       "main": [
         [
           {
@@ -246,14 +227,14 @@
       "main": [
         [
           {
-            "node": "waitBetween",
+            "node": "waitNode",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "waitBetween": {
+    "waitNode": {
       "main": [
         [
           {
@@ -265,8 +246,9 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1"
-  }
+  },
+  "versionId": "fixed-20250716"
 }

@@ -14,7 +14,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [-600, 0],
-      "credentials": { "googleSheetsOAuth2Api": "Google Sheets account" },
+      "credentials": {
+        "googleSheetsOAuth2Api": "Google Sheets account"
+      },
       "parameters": {
         "operation": "getAll",
         "documentId": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
@@ -28,7 +30,9 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [-400, 0],
-      "parameters": { "batchSize": 1 }
+      "parameters": {
+        "batchSize": 1
+      }
     },
     {
       "id": "dateTimeStart",
@@ -48,7 +52,9 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [0, -100],
-      "credentials": { "httpHeaderAuth": "openrouterApi" },
+      "credentials": {
+        "httpHeaderAuth": "openrouterApi"
+      },
       "parameters": {
         "method": "POST",
         "url": "https://openrouter.ai/api/v1/chat/completions",
@@ -56,8 +62,14 @@
         "jsonBody": {
           "model": "={{$json[\"Название модели\"]}}",
           "messages": [
-            { "role": "system", "content": "Ты полезный помощник." },
-            { "role": "user", "content": "Привет, как дела?" }
+            {
+              "role": "system",
+              "content": "Ты полезный помощник."
+            },
+            {
+              "role": "user",
+              "content": "Привет, как дела?"
+            }
           ],
           "max_tokens": 3000,
           "temperature": 0.7,
@@ -113,7 +125,9 @@
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.6,
       "position": [800, 0],
-      "credentials": { "googleSheetsOAuth2Api": "Google Sheets account" },
+      "credentials": {
+        "googleSheetsOAuth2Api": "Google Sheets account"
+      },
       "parameters": {
         "operation": "update",
         "documentId": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
@@ -133,21 +147,126 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1,
       "position": [1000, 0],
-      "parameters": { "unit": "seconds", "time": 1 }
+      "parameters": {
+        "unit": "seconds",
+        "time": 1
+      }
     }
   ],
   "connections": {
-    "manualTrigger": { "main": [[{ "node": "getRows" }]] },
-    "getRows": { "main": [[{ "node": "splitBatches" }]] },
-    "splitBatches": { "main": [[{ "node": "dateTimeStart" }]] },
-    "dateTimeStart": { "main": [[{ "node": "httpRequest" }]] },
-    "httpRequest": { "main": [[{ "node": "dateTimeEnd" }]] },
-    "dateTimeEnd": { "main": [[{ "node": "getDuration" }]] },
-    "getDuration": { "main": [[{ "node": "setFields" }]] },
-    "setFields": { "main": [[{ "node": "updateRow" }]] },
-    "updateRow": { "main": [[{ "node": "waitBetween" }]] },
-    "waitBetween": { "main": [[{ "node": "splitBatches" }]] }
-  ],
+    "manualTrigger": {
+      "main": [
+        [
+          {
+            "node": "getRows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getRows": {
+      "main": [
+        [
+          {
+            "node": "splitBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "splitBatches": {
+      "main": [
+        [
+          {
+            "node": "dateTimeStart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dateTimeStart": {
+      "main": [
+        [
+          {
+            "node": "httpRequest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "httpRequest": {
+      "main": [
+        [
+          {
+            "node": "dateTimeEnd",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "dateTimeEnd": {
+      "main": [
+        [
+          {
+            "node": "getDuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "getDuration": {
+      "main": [
+        [
+          {
+            "node": "setFields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "setFields": {
+      "main": [
+        [
+          {
+            "node": "updateRow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "updateRow": {
+      "main": [
+        [
+          {
+            "node": "waitBetween",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "waitBetween": {
+      "main": [
+        [
+          {
+            "node": "splitBatches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

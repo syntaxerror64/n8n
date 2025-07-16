@@ -1,0 +1,302 @@
+{
+  "name": "speed_tests_models_api_openrouter_enhanced",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-820, -240],
+      "id": "ef249a41-22f4-4079-a176-680ff47e902a",
+      "name": "When clicking 'Execute workflow'"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
+          "mode": "list",
+          "cachedResultName": "speed_tests_models_api_openrouter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [-580, -240],
+      "id": "84d6287e-4570-4766-bb6c-c7afea886436",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tfw9zSBchl2znVL4",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [-340, -240],
+      "id": "loop-over-items",
+      "name": "Loop Over Items (Split in Batches)"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "model_name",
+              "value": "={{ $json['Название модели'] }}"
+            },
+            {
+              "name": "row_number",
+              "value": "={{ $json.row_number }}"
+            },
+            {
+              "name": "start_time",
+              "value": "={{ $now.toISO() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [-100, -240],
+      "id": "set-start-time",
+      "name": "Set Start Time"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"{{ $json.model_name }}\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"Ты полезный помощник.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Привет, как дела?\"\n    }\n  ],\n  \"max_tokens\": 3000,\n  \"temperature\": 0.7,\n  \"stream\": false\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [160, -240],
+      "id": "http-request-api",
+      "name": "HTTP Request to API"
+    },
+    {
+      "parameters": {
+        "fields": {
+          "values": [
+            {
+              "name": "model_name",
+              "value": "={{ $json.model_name }}"
+            },
+            {
+              "name": "row_number",
+              "value": "={{ $json.row_number }}"
+            },
+            {
+              "name": "start_time",
+              "value": "={{ $json.start_time }}"
+            },
+            {
+              "name": "end_time",
+              "value": "={{ $now.toISO() }}"
+            },
+            {
+              "name": "duration_seconds",
+              "value": "={{ Math.round(($now.diff(DateTime.fromISO($json.start_time), 'seconds'))) }}"
+            },
+            {
+              "name": "response_message",
+              "value": "={{ $json.choices && $json.choices[0] && $json.choices[0].message ? $json.choices[0].message.content : 'No response' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [420, -240],
+      "id": "calculate-duration",
+      "name": "Calculate Duration"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM",
+          "mode": "list",
+          "cachedResultName": "speed_tests_models_api_openrouter",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1c3AV_9b8VcrLws0GkRb0EP8LjUqMCYnyxBsKNujzqyM/edit#gid=0"
+        },
+        "operation": "update",
+        "keyRow": "{{ $json.row_number }}",
+        "columnMappingMode": "defineBelow",
+        "valueInputMode": "assignToColumns",
+        "columns": {
+          "value": {
+            "Время отправки HTTP запроса": "={{ $json.start_time }}",
+            "Время получения HTTP запроса": "={{ $json.end_time }}",
+            "Сколько по времени обрабатывался": "={{ $json.duration_seconds }} сек",
+            "Текст полученного сообщения": "={{ $json.response_message }}"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [680, -240],
+      "id": "update-sheet",
+      "name": "Update Sheet Row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "tfw9zSBchl2znVL4",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 1,
+        "unit": "seconds"
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [940, -240],
+      "id": "wait-between-requests",
+      "name": "Wait Between Requests"
+    }
+  ],
+  "connections": {
+    "When clicking 'Execute workflow'": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (Split in Batches)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items (Split in Batches)": {
+      "main": [
+        [
+          {
+            "node": "Set Start Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Start Time": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request to API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request to API": {
+      "main": [
+        [
+          {
+            "node": "Calculate Duration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Duration": {
+      "main": [
+        [
+          {
+            "node": "Update Sheet Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Sheet Row": {
+      "main": [
+        [
+          {
+            "node": "Wait Between Requests",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Between Requests": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (Split in Batches)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "enhanced-version",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "025262812442a68efffc3b21cec04dbd29724bb90e26a0afef2dab1f934827b1"
+  },
+  "id": "wUeVU2W7tcCMUDRY",
+  "tags": []
+}
